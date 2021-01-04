@@ -15,16 +15,16 @@ class ProductView(View):
                 dict_data = json_to_dict(json_data)
                 model_object = ProductModel.objects.get(idno=dict_data['idno'])
                 serialize_obj = ProductSerializers(model_object)
-                message = dict_to_json(serialize_obj.data)
+                result = serialize_obj.data
             except ProductModel.DoesNotExist:
-                error = {
+                result = {
                     'error': 'Your requested IDNO does not match.'
                 }
-                message = dict_to_json(error)
         else:
             models_obj = ProductModel.objects.all()
             serialize_objs = ProductSerializers(models_obj, many=True)
-            message = dict_to_json(serialize_objs.data)
+            result = serialize_objs.data
+        message = dict_to_json(result)
         return HttpResponse(message, content_type='application/json')
 
     def post(self,request):
@@ -32,12 +32,47 @@ class ProductView(View):
         serializer_obj = ProductSerializers(data=dict_data)
         if serializer_obj.is_valid():
             serializer_obj.save()
-            success = {
+            result = {
                 'info' : 'Data saved successfully'
             }
-            message = dict_to_json(success)
         else:
-            message = dict_to_json(serializer_obj.errors)
+            result = serializer_obj.errors
+        message = dict_to_json(result)
         return HttpResponse(message, content_type='application/json')
+
+    def put(self,request):
+        dict_data = json_to_dict(request.body)
+        try:
+            model_object = ProductModel.objects.get(idno=dict_data['idno'])
+            serializer_obj = ProductSerializers(model_object, dict_data, partial=True)
+            if serializer_obj.is_valid():
+                serializer_obj.save()
+                result = {
+                    'info' : 'Resource updated successfully.'
+                }
+            else:
+                result = serializer_obj.errors
+        except ProductModel.DoesNotExist:
+            result = {
+                'error' : 'Your requested IDNO does not match.'
+            }
+        message = dict_to_json(result)
+        return HttpResponse(message, content_type='application/json')
+
+    def delete(self, request):
+        dict_data = json_to_dict(request.body)
+        try:
+            model_object = ProductModel.objects.get(idno=dict_data['idno'])
+            model_object.delete()
+            result = {
+                'info' : 'Resourse deleted successfully.'
+            }
+        except ProductModel.DoesNotExist:
+            result = {
+                'error' : 'Your requested IDNO does not match.'
+            }
+        message = dict_to_json(result)
+        return HttpResponse(message, content_type='application/json')
+
 
 
